@@ -18,13 +18,6 @@ object Identifier {
     )
 
     @JvmStatic
-    fun setDetectionModeSequence(shuffle: Boolean, detectionMode: List<DetectionMode>){
-        Identifier.detectionMode = detectionMode.run {
-            if (shuffle) shuffled() else this
-        }
-    }
-
-    @JvmStatic
     fun getLivenessIntent(context: Context): Intent {
         attempt++
         return Intent(context, InitActivity::class.java)

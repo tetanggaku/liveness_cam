@@ -2,7 +2,6 @@ package id.kakzaki.face_detection
 import android.content.Intent
 import android.graphics.Rect
 import android.os.Bundle
-import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.view.View
 import android.widget.ImageView
@@ -28,16 +27,12 @@ import kotlin.concurrent.fixedRateTimer
 
 class LivenessDetectionActivity : BaseCameraActivity(), LivenessDetectionListener {
 
-    private lateinit var textToSpeech: TextToSpeech
     lateinit var uiContainer: View
     lateinit var tvInstruction: TextView
     lateinit var tvTimer: TextView
-    lateinit var tgbTextToSpeech: ToggleButton
     lateinit var ivBack: ImageView
     lateinit var ivFace: ImageView
     lateinit var graphicOverlay: GraphicOverlay
-
-    private var isMute = false
 
     private var timer: Timer? = null
     private var countdownTime = COUNTDOWN_TIME
@@ -56,13 +51,6 @@ class LivenessDetectionActivity : BaseCameraActivity(), LivenessDetectionListene
         ivBack.setOnClickListener {
             finish()
         }
-        tgbTextToSpeech = uiContainer.findViewById(R.id.tg_mute)
-        tgbTextToSpeech.setOnCheckedChangeListener { _, isChecked ->
-            isMute = isChecked
-            if (isMute)
-                textToSpeech.stop()
-        }
-        initTextToSpeech()
     }
 
 
@@ -101,11 +89,18 @@ class LivenessDetectionActivity : BaseCameraActivity(), LivenessDetectionListene
 
     override fun startCamera(cameraProvider: ProcessCameraProvider, previewView: PreviewView) {
         val offset = 50
+        
+        // detectionModes
+        val listToShuffle = Identifier.detectionMode.filter { it != DetectionMode.HOLD_STILL }
+        val shuffledList = listToShuffle.shuffled(Random(System.currentTimeMillis()))
+        val finalList = mutableListOf(DetectionMode.HOLD_STILL)
+
+        finalList.addAll(shuffledList)
         val analysisUseCase = ImageAnalysis.Builder().build().also {
             it.setAnalyzer(cameraExecutor,
                 LivenessDetectionAnalyzer(
                     this,
-                    Identifier.detectionMode,
+                    finalList,
                     Rect(ivFace.left - offset*2, ivFace.top - offset, ivFace.right + offset*2, ivFace.bottom + offset),
                     graphicOverlay,
                     false,
@@ -127,31 +122,11 @@ class LivenessDetectionActivity : BaseCameraActivity(), LivenessDetectionListene
         }
     }
 
-    private fun initTextToSpeech(){
-        textToSpeech = TextToSpeech(this){ status ->
-            if(status != TextToSpeech.ERROR) {
-                val locale = Locale.getDefault()
-                textToSpeech.voices.firstOrNull {
-                    it.locale == locale
-                }?.also {
-                    textToSpeech.voice = it
-                }
-            }
-        }
-    }
-
-    private fun speak(text: String){
-        if (!isMute)
-            textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, "${text.hashCode()}  ${System.currentTimeMillis()}" )
-    }
-
     override fun onPause() {
         super.onPause()
-        textToSpeech.stop()
     }
 
     override fun onFaceStatusChanged(faceStatus: FaceStatus) {
-        textToSpeech.stop()
         tvInstruction.text = when(faceStatus){
             FaceStatus.NOT_FOUND -> getString(R.string.lbl_put_face_to_the_frame)
             FaceStatus.TOO_FAR -> getString(R.string.lbl_too_far)
@@ -168,24 +143,19 @@ class LivenessDetectionActivity : BaseCameraActivity(), LivenessDetectionListene
         when(detectionMode){
             DetectionMode.HOLD_STILL ->{
                 tvInstruction.text = getString(R.string.lbl_hold_still_instruction)
-                speak(getString(R.string.lbl_hold_still_instruction))
             }
 
             DetectionMode.BLINK -> {
                 tvInstruction.text = getString(R.string.liveness_please_blink)
-                speak(getString(R.string.liveness_please_blink))
             }
             DetectionMode.OPEN_MOUTH -> {
                 tvInstruction.text = getString(R.string.liveness_please_open_mouth)
-                speak(getString(R.string.liveness_please_open_mouth))
             }
             DetectionMode.SHAKE_HEAD -> {
                 tvInstruction.text = getString(R.string.liveness_please_shake_head)
-                speak(getString(R.string.liveness_please_shake_head))
             }
             DetectionMode.SMILE -> {
                 tvInstruction.text = getString(R.string.liveness_please_smile)
-                speak(getString(R.string.liveness_please_smile))
             }
         }
     }

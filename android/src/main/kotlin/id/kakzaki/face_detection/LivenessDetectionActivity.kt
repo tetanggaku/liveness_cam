@@ -62,7 +62,7 @@ class LivenessDetectionActivity : BaseCameraActivity(), LivenessDetectionListene
                 countdownTime--
                 if (countdownTime==0){
                     stopTimer()
-                    alert("TimeOut", isCancelable = false){
+                    alert("Waktu verifikasi muka telah habis, anda harus mencoba ulang lagi", isCancelable = false){
                         val livenessResult = LivenessResult(false, "User Timeout")
                         setResult(RESULT_OK, Intent().putExtra(EXTRA_RESULT,livenessResult))
                         finish()

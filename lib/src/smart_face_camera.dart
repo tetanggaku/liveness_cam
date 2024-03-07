@@ -191,7 +191,8 @@ class _SmartFaceCameraState extends State<SmartFaceCamera>
     final CameraController? cameraController = _controller;
     try {
       cameraController!.stopImageStream().whenComplete(() async {
-        await Future.delayed(const Duration(milliseconds: 500));
+        await Future.delayed(const Duration(milliseconds: 1000));
+        cameraController.setFlashMode(FlashMode.off);
         takePicture().then((XFile? file) {
           /// Return image callback
           widget.onCapture(File(file!.path));
@@ -199,6 +200,7 @@ class _SmartFaceCameraState extends State<SmartFaceCamera>
           /// Resume image stream after 2 seconds of capture
 
           Future.delayed(const Duration(seconds: 2)).whenComplete(() {
+            cameraController.setFlashMode(FlashMode.off);
             if (mounted && cameraController.value.isInitialized) {
               try {
                 _startImageStream();
@@ -210,6 +212,9 @@ class _SmartFaceCameraState extends State<SmartFaceCamera>
         });
       });
     } catch (e) {
+      if (cameraController != null) {
+      cameraController.setFlashMode(FlashMode.off);
+      }
       debugPrint(e.toString());
     }
   }
